@@ -287,12 +287,43 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 			solution.push_back(c1);
 			solution.push_back(c2);
 
+			Vertex & v1 = g.at(c1);
+			Vertex & v2 = g.at(c2);
+			v1.protect();
+			v2.protect();
+
+			//label degree one vertices that are saved by the vertices of the pair
+			if (uc.at(c1) != 0) {
+				vec & adj_1 = v1.getAdjlist();
+				for (int i=0; i<adj_1.size(); ++i) {
+					Vertex & n = g.at(adj_1.at(i));
+					vec & adj_n = n.getAdjlist();
+					if(adj_n.size() == 1) {
+						n.saved();
+					}
+				}
+			}
+
+			if (uc.at(c2) != 0) {
+				vec & adj_2 = v2.getAdjlist();
+				for (int i=0; i<adj_2.size(); ++i) {
+					Vertex & n = g.at(adj_2.at(i));
+					vec & adj_n = n.getAdjlist();
+					if(adj_n.size() == 1) {
+						n.saved();
+					}
+				}
+			}
+			
+			//label vertices that are saved by the pair
 			vec neighbour = independent.at((delimiter * c1) + c2);
 			for(int i=0; i<neighbour.size(); ++i) {
 				const int & n = neighbour.at(i);
 				Vertex & v = g.at(n);
 				v.saved();
 			}
+
+			
 			
 		}
 
@@ -303,6 +334,7 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 			
 			//label saved vertices
 			Vertex & v1 = g.at(index1);
+			v1.protect();
 			vec & adj_1 = v1.getAdjlist();
 			for(int i=0; i<adj_1.size(); ++i) {
 				Vertex    & v         = g.at(adj_1.at(i));
@@ -312,6 +344,7 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 				}
 			}
 			Vertex & v2 = g.at(index2);
+			v2.protect();
 			vec & adj_2 = v2.getAdjlist();
 			for(int i=0; i<adj_2.size(); ++i) {
 				Vertex    & v         = g.at(adj_2.at(i));
@@ -346,19 +379,22 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 		}
 
 		//check whether there exists another vertex to protect (in O(n^2))
+		/*
 		for(int i=0; i<adjlist_s.size(); ++i) {
 			Vertex & v = g.at(adjlist_s.at(i));
-			vec & adj = v.getAdjlist();
-			for(int j=0; j < adj.size(); ++j) {
-				const int & n = adj.at(j);
-				//std::cout << n << std::endl;
-				if(n >= delimiter) {
-					Vertex & u = g.at(n);
-					u.burn();
+			if(v.getState() == 0) {
+				v.burn();
+				vec & adj = v.getAdjlist();
+				for(int j=0; j < adj.size(); ++j) {
+					const int & n = adj.at(j);
+					//std::cout << n << std::endl;
+					if(n >= delimiter) {
+						Vertex & u = g.at(n);
+						u.burn();
+					}
 				}
 			}
 		}
-		
 
 		for(int i=delimiter; i<g.size(); ++i) {
 			Vertex & v = g.at(i);
@@ -368,6 +404,60 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 				break;
 			}
 		}
+		*/
+		
+		/*
+		for(int i=0; i<g.size(); ++i) {
+			Vertex & v = g.at(i);
+			std::cout << "Vertex " << i << ": " << v.getState() << std::endl;
+		}
+		*/
+
+		
+		vec ok(g.size());
+		ok.at(pos) = 1;
+
+		for(int i=0; i<adjlist_s.size(); ++i) {
+			ok.at(adjlist_s.at(i)) = 1;
+		}
+		for(int i=0; i<solution.size(); ++i) {
+			ok.at(solution.at(i)) = 0;
+		}
+
+
+		for(int i=delimiter; i<ok.size(); ++i) {
+			if(ok.at(i) == 0) {
+				Vertex & v = g.at(i);
+				const vec & adj = v.getAdjlist();
+				for(int j=0; j<adj.size(); ++j) {
+					//const int & n = adj.at(j);
+					if(ok.at(adj.at(j)) == 1) {
+						ok.at(i) = 1;
+						break;
+					}
+				}
+			}
+		}
+
+		/*
+		for(int i=0; i<g.size(); ++i) {
+			std::cout << "Vertex" << i << ": " << ok.at(i) << std::endl;;
+		}
+		std::cout << std::endl;
+		*/
+
+		for(int i=delimiter; i<g.size(); ++i) {
+			if(ok.at(i) == 0) {
+				Vertex & v = g.at(i);
+				if(v.getState() == 0) {
+					v.protect();
+					solution.push_back(i);
+					break;
+				}
+			}
+		}
+		
+		
 
 		/*
 		for(int i=delimiter; i < g.size(); ++i) {

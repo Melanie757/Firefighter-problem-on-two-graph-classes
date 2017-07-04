@@ -1,8 +1,8 @@
-CXX=clang++
+CXX=g++
 # profiling flags for gprof
 #FLAGS=-std=c++11 -Wall -Wpedantic -pg
 FLAGS=-std=c++11 -Wall -Wpedantic
-#FLAGS+= -fopenmp
+FLAGS+= -fopenmp
 #FILES=onSplitgraphs.cpp
 #FILES=onCographs2.cpp
 FILES=main.cpp read_graph.cpp onCographs.cpp onSplitgraphs.cpp getSplitgraph.cpp

@@ -47,8 +47,11 @@ int main(int argc, char** argv) {
       std::cout << "generating graph" << std::endl;
 			g_file = getSplitgraph(c, ind);
 		}
-		Splitgraph sol(g_file, delimiter);
+		
+    Splitgraph sol_orig(g_file, delimiter);
+#pragma omp parallel for schedule(dynamic)
 		for (size_t i=0; i<g_file.size(); ++i) {
+      Splitgraph sol(sol_orig);
 			start = std::chrono::system_clock::now();
 			auto solution = onSplitgraphs(sol,i);
 			end   = std::chrono::system_clock::now();
@@ -62,7 +65,6 @@ int main(int argc, char** argv) {
 			std::cout << std::endl;
 			std::cout << "time: " << time_in_us.count() << "us" << std::endl;	
 		}
-
 	}
 
 	else if(program == "Cograph") {

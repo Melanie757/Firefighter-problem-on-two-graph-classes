@@ -44,13 +44,11 @@ int main(int argc, char** argv) {
 				return EXIT_FAILURE;
 			}
 			delimiter = c;
+      std::cout << "generating graph" << std::endl;
 			g_file = getSplitgraph(c, ind);
 		}
-
+		Splitgraph sol(g_file, delimiter);
 		for (size_t i=0; i<g_file.size(); ++i) {
-			
-			Splitgraph sol(g_file, delimiter);
-
 			start = std::chrono::system_clock::now();
 			auto solution = onSplitgraphs(sol,i);
 			end   = std::chrono::system_clock::now();

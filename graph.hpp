@@ -80,6 +80,9 @@ public:
 
 	storage & getGraph() {return graph_;}
 	Vertex & at(const int & i) {return graph_.at(i);}
+	const Vertex & at(const int & i) const {return graph_.at(i);}
+	Vertex & operator[](const int & i) {return graph_[i];}
+	const Vertex & operator[](const int & i) const {return graph_[i];}
 
 	size_t size() const {
 		return graph_.size();

@@ -2,6 +2,7 @@ CXX=clang++
 # profiling flags for gprof
 #FLAGS=-std=c++11 -Wall -Wpedantic -pg
 FLAGS=-std=c++11 -Wall -Wpedantic
+#FLAGS+= -fopenmp
 #FILES=onSplitgraphs.cpp
 #FILES=onCographs2.cpp
 FILES=main.cpp read_graph.cpp onCographs.cpp onSplitgraphs.cpp getSplitgraph.cpp
@@ -20,7 +21,7 @@ debug: $(FILES)
 	$(CXX) $(FLAGS) -g $(FILES) -o $(OUTPUT)
 
 profile: $(FILES)
-	$(CXX) $(FLAGS) -pg $(FILES) -o $(OUTPUT)
+	$(CXX) $(FLAGS) -O3 -pg $(FILES) -o $(OUTPUT)
 
 run: $(FILES)
 	make release; ./$(OUTPUT) 

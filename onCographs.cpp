@@ -34,7 +34,7 @@ vec onCographs(const Graph & g1, const Graph & g2, const int & pos){
 	}
 
 	//burn unprotected neighbours of s
-	for (int i=0; i<adj_s.size(); ++i) {
+	for (size_t i=0; i<adj_s.size(); ++i) {
 		Vertex & next = g.at(adj_s.at(i));
 		if (next.getState() == 0) {
 			next.burn();
@@ -42,7 +42,7 @@ vec onCographs(const Graph & g1, const Graph & g2, const int & pos){
 	}
 
 	//find unburned vertex in g and protect it if it exists
-	for (int i=0; i<g.size(); ++i) {
+	for (size_t i=0; i<g.size(); ++i) {
 		Vertex & v = g.at(i);
 		if (v.getState() == 0) {
 			solution.push_back(i);

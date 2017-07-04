@@ -22,7 +22,7 @@ Splitgraph getSplitgraph(int c, int ind) {
 		}
 	}
 
-	for (int i=c; i<g.size(); ++i) {
+	for (size_t i=c; i<g.size(); ++i) {
     Vertex & v = g.at(i);
 		int r = idist(rgen);
 		int j = 0;

@@ -37,7 +37,7 @@ public:
 		}
 	}
 
-	const int numlinks() const {
+	size_t numlinks() const {
 		return adjlist_.size();
 	}
 
@@ -81,7 +81,7 @@ public:
 	storage & getGraph() {return graph_;}
 	Vertex & at(const int & i) {return graph_.at(i);}
 
-	int size() const {
+	size_t size() const {
 		return graph_.size();
 	}
 
@@ -111,18 +111,18 @@ public:
 	}
 
 	void growAdjlists(int nelem) {
-		for (int i=0; i<graph_.size(); ++i) {
+		for (size_t i=0; i<graph_.size(); ++i) {
 			Vertex v = graph_.at(i);
 			v.sizeAdjlist(nelem);
 		}
 	}
 
 	void print() const {
-		for(int i=0; i<graph_.size(); ++i){
+		for(size_t i=0; i<graph_.size(); ++i){
 			std::cout << "Node " << i << " Nachbarn: " << std::endl;
 			Vertex s(graph_[i]);
 			std::vector<int> n = s.getAdjlist();
-			for (int j=0; j<graph_[i].numlinks(); ++j) {
+			for (size_t j=0; j<graph_[i].numlinks(); ++j) {
 				std::cout << n[j] << " ";
 			}
 			std::cout << std::endl;
@@ -147,10 +147,10 @@ public:
 		graph_.insert(graph_.end(), two.begin(), two.end());
 
 		int c = one.size();
-		for(int i=delimiter; i<graph_.size(); ++i) {
+		for(size_t i=delimiter; i<graph_.size(); ++i) {
 			Vertex & v = graph_.at(i);
 			std::vector<int> & adj = v.getAdjlist();
-			for(int j=0; j<adj.size(); ++j) {
+			for(size_t j=0; j<adj.size(); ++j) {
 				adj.at(j) += c;
 			}
 		}
@@ -158,7 +158,7 @@ public:
 		if(type == GRAPH_TYPE::JOIN){
 			// join first part
 			std::for_each(graph_.begin(), graph_.begin() + delimiter, [&](Vertex & v){
-				for(int i=delimiter; i<graph_.size(); ++i){
+				for(size_t i=delimiter; i<graph_.size(); ++i){
 					v.addlink(i);
 				}
 			});

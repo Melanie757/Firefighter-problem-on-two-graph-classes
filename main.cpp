@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
 			g_file = getSplitgraph(c, ind);
 		}
 
-		for (int i=0; i<g_file.size(); ++i) {
+		for (size_t i=0; i<g_file.size(); ++i) {
 			
 			Splitgraph sol(g_file, delimiter);
 
@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
 			auto time_in_us = std::chrono::duration_cast<std::chrono::microseconds>(elapsed_time);
 			
 			std::cout << "Burning Vertex:" << i << std::endl;
-			for (int i=0; i<solution.size(); ++i) {
+			for (size_t i=0; i<solution.size(); ++i) {
 				std::cout << solution.at(i) << " ";
 			}
 			std::cout << std::endl;
@@ -81,9 +81,9 @@ int main(int argc, char** argv) {
 		g1_file = read_graph(filename_g1);
 		g2_file = read_graph(filename_g2);
 
-		const int size_total = g1_file.size() + g2_file.size();
+		const size_t size_total = g1_file.size() + g2_file.size();
 		//start = std::chrono::system_clock::now();
-		for (int i=0; i<size_total; ++i) {
+		for (size_t i=0; i<size_total; ++i) {
 			start = std::chrono::system_clock::now();
 			auto solution = onCographs(g1_file, g2_file, i);
 			end   = std::chrono::system_clock::now();
@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
 			auto time_in_us = std::chrono::duration_cast<std::chrono::microseconds>(elapsed_time);
 			
 			std::cout << "Burning Vertex: " << i << std::endl;
-			for (int i=0; i<solution.size(); ++i) {
+			for (size_t i=0; i<solution.size(); ++i) {
 				std::cout << solution[i] << " ";
 			}
 			std::cout << std::endl;

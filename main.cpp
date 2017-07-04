@@ -44,8 +44,12 @@ int main(int argc, char** argv) {
 				return EXIT_FAILURE;
 			}
 			delimiter = c;
-      std::cout << "generating graph" << std::endl;
+			start = std::chrono::system_clock::now();
+      std::cout << "generating graph ..." << std::endl;
 			g_file = getSplitgraph(c, ind);
+			end = std::chrono::system_clock::now();
+      auto time_in_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+      std::cout << "took " << time_in_ms.count() << "ms" << std::endl;
 		}
 		
     Splitgraph sol_orig(g_file, delimiter);
@@ -63,7 +67,7 @@ int main(int argc, char** argv) {
 				std::cout << solution.at(i) << " ";
 			}
 			std::cout << std::endl;
-			std::cout << "time: " << time_in_us.count() << "us" << std::endl;	
+			std::cout << "time: " << time_in_us.count() << "us" << std::endl;
 		}
 	}
 

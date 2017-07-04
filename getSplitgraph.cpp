@@ -8,11 +8,14 @@
 Splitgraph getSplitgraph(int c, int ind) {
 	Graph g;
 	g.grow(c + ind);
+  auto gsize = g.size();
 	std::random_device rseed;
 	std::mt19937 rgen(rseed());
 	std::uniform_int_distribution<> idist(1,c-1);
 	std::uniform_int_distribution<> idist2(0,c);
-  
+
+  // generate clique
+  // TODO: Split in disjunct sets to apply omp acceleration
   for (int i=0; i<c-1; ++i) {
 		Vertex & v = g.at(i);
 		for (int j=i+1; j<c; ++j) {
@@ -21,18 +24,21 @@ Splitgraph getSplitgraph(int c, int ind) {
 			w.addlink(i);
 		}
 	}
-
-	for (size_t i=c; i<g.size(); ++i) {
+#pragma omp parallel firstprivate(gsize)
+  {
+#pragma omp for schedule(static) 
+	for (size_t i=c; i<gsize; ++i) {
     Vertex & v = g.at(i);
 		int r = idist(rgen);
 		int j = 0;
 		while(j<r){
 			int dest = idist2(rgen);
-			const std::vector<int> adj = v.getAdjlist();
+			const std::vector<int> & adj = v.getAdjlist();
 			if(std::find(adj.begin(), adj.end(), dest) != adj.end()) {
 				continue;
 			}
 			else{
+#pragma omp critical
 				v.addlink(dest);
 				++j;
 			}
@@ -47,7 +53,14 @@ Splitgraph getSplitgraph(int c, int ind) {
 		std::cout << "Vertex " << i << ": " << n << std::endl;
 	}
 	*/
-	std::for_each(g.begin(), g.end(), [](Vertex & v){v.sortadjlist();});
+#pragma omp for schedule(static)
+  for(size_t i = 0; i<g.size(); ++i){
+    g[i].sortadjlist();
+  }
+  } // end pragma omp parallel
+
+// not compatible with openmp
+//	std::for_each(g.begin(), g.end(), [](Vertex & v){v.sortadjlist();});
 	Splitgraph s(g, c);
 	return s;
 }

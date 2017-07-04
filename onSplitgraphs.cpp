@@ -76,7 +76,6 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 		const vec    & adjlist_sol1 = sol1.getAdjlist();
 
 		
-    {
 		for(size_t i=0; i<adjlist_sol1.size(); ++i) {
 			Vertex    & v         = g[adjlist_sol1[i]];
 			const vec & adjlist_v = v.getAdjlist();
@@ -92,7 +91,6 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 				next.burn();
 			}
 		}
-    } // end pragma omp parallel
 
 		//find an unprotected and not saved vertex in the independent set if it exists
 		for (size_t i=delimiter; i<g.size(); ++i) {
@@ -125,7 +123,7 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 		//otherwise
 
 		//compute pair-bonus
-		const int del2 = delimiter * delimiter;
+//		const int del2 = delimiter * delimiter;
 //		vec pairbonus(del2); 	//The first delimiter entries create the bucket of the first vertex in C and so on.
     std::unordered_map<int, int> pairbonus;
 							 	//If now for example vertex 4 is in the bucket of the first vertex,
@@ -182,49 +180,41 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 		//calculate |U({c1,c2})| for every pair {c1,c2} in pairs and find the maximum
 		//|U({c1,c2})| = pair-bonus + |U(c1)| + |U(c2)|
 	
-    // TODO: replace by std::unordered_map
-		vec u2(del2); //vector to store |U({c1,c2})|
+//		vec u2(del2); //vector to store |U({c1,c2})|
+    std::unordered_map<int, int> u2;
+    // pairbonus map only contains non-zero bonuses
+//		for (int i=0; i<del2; ++i) {
+    for (const auto & it : pairbonus){
+			//find the pair of vertices related to pairbonus.at(i)
+			const int c1 = it.first % delimiter;
+			const int c2 = it.first / delimiter;
 
-		for (int i=0; i<del2; ++i) {
-			if (pairbonus.count(i) == 0) {
-				continue;
+			/*
+			std::cout << "c_1, c_2: " << c1 << ", " << c2 << std::endl;
+			for(size_t i=0; i<adjlist_s.size(); ++i) {std::cout << adjlist_s.at(i) << ", ";}
+			std::cout << std::endl;
+
+			std::cout << !std::binary_search(adjlist_s.begin(), adjlist_s.end(), c1) << std::endl;
+			std::cout << !std::binary_search(adjlist_s.begin(), adjlist_s.end(), c2) << std::endl;
+			*/
+
+			//if c1 is not adjacent to s, this pair of vertices can be a valid solution
+			if (!std::binary_search(adjlist_s.begin(), adjlist_s.end(), c1)) {
+				const int & pb = it.second;
+				const int & n = uc[c1] + uc[c2];  //|U(c1)| + |U(c2)|
+				u2[it.first] = pb + n;
+				//std::cout << u2.at(i) << std::endl;
 			}
+			//else c2 cannot be a neighbour of s, since then c1 and c2 cannot be both protected
 			else {
-				//find the pair of vertices related to pairbonus.at(i)
-				const int c1 = i % delimiter;
-				const int c2 = i / delimiter;
-
-				/*
-				std::cout << "c_1, c_2: " << c1 << ", " << c2 << std::endl;
-				for(size_t i=0; i<adjlist_s.size(); ++i) {std::cout << adjlist_s.at(i) << ", ";}
-				std::cout << std::endl;
-
-				std::cout << !std::binary_search(adjlist_s.begin(), adjlist_s.end(), c1) << std::endl;
-				std::cout << !std::binary_search(adjlist_s.begin(), adjlist_s.end(), c2) << std::endl;
-				*/
-
-				//if c1 is not adjacent to s, this pair of vertices can be a valid solution
-				if (!std::binary_search(adjlist_s.begin(), adjlist_s.end(), c1)) {
-					const int & pb = pairbonus[i];
+				if (!std::binary_search(adjlist_s.begin(), adjlist_s.end(), c2)) {
+					const int & pb = it.second;
 					const int & n = uc[c1] + uc[c2];  //|U(c1)| + |U(c2)|
-					u2[i] = pb + n;
+					u2[it.first] = pb + n;
 					//std::cout << u2.at(i) << std::endl;
 				}
-				//else c2 cannot be a neighbour of s, since then c1 and c2 cannot be both protected
-				else {
-					if (!std::binary_search(adjlist_s.begin(), adjlist_s.end(), c2)) {
-						const int & pb = pairbonus[i];
-						const int & n = uc[c1] + uc[c2];  //|U(c1)| + |U(c2)|
-						u2[i] = pb + n;
-						//std::cout << u2.at(i) << std::endl;
-					}
-					else {
-						continue;
-					}
-				}
-
 			}
-		}
+	}
 
 		/*
 		std::cout << "u2: " << std::endl;
@@ -239,10 +229,14 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 		int maxu2 = 0;
 		int indexu2 = 0;
 
-		const auto & ittomax = std::max_element(u2.begin(), u2.end()); 	//iterator on the maximum in u2
-		maxu2 = *ittomax;												//maximum (>= 0)
-		indexu2 = std::distance(u2.begin(), ittomax);					//index of the maximum in u2
-		
+    if(u2.size() > 0){
+		  const auto & ittomax = std::max_element(u2.begin(), u2.end(),
+          [](const std::pair<int, int> & a,
+             const std::pair<int, int> & b)
+            {return a.second < b.second;}); 	//iterator on the maximum in u2
+		  maxu2   = ittomax->second;												//maximum (>= 0)
+		  indexu2 = ittomax->first;					//index of the maximum in u2
+    }
 
 		//find "second" maximum of uc
 		//if every entry is 0: returns last index that is not pos or index1

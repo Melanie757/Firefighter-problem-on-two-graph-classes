@@ -1,10 +1,11 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-//#include "graph.cpp"
 #include <stdexcept>
 #include <unordered_map>
 
+#include "graph.hpp"
+#include "read_graph.hpp"
 
 Graph read_graph(const std::string & filename) {
 

@@ -1,3 +1,6 @@
+#ifndef GRAPH_H_INCLUDED
+#define GRAPH_H_INCLUDED
+
 #include <vector>
 #include <iostream>
 #include <algorithm>
@@ -197,3 +200,6 @@ public:
 		return delimiter_;
 	}
 };
+
+#endif
+

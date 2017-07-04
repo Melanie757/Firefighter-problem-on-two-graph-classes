@@ -1,4 +1,4 @@
-//#include "graph.cpp"
+#include "graph.hpp"
 #include <iostream>
 #include <random>
 #include <algorithm>
@@ -51,11 +51,3 @@ Splitgraph getSplitgraph(int c, int ind) {
 	Splitgraph s(g, c);
 	return s;
 }
-
-/*
-int main() {
-	Graph g = getSplitgraph(10,2);
-	//std:: cout << RandU(0, 99) << std::endl;
-	return 0;
-}
-*/

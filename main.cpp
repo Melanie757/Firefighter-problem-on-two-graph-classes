@@ -1,8 +1,8 @@
-#include "graph.cpp"
-#include "read_graph.cpp"
-#include "onCographs.cpp"
-#include "onSplitgraphs.cpp"
-#include "getSplitgraph.cpp"
+#include "graph.hpp"
+#include "read_graph.hpp"
+#include "onCographs.hpp"
+#include "onSplitgraphs.hpp"
+#include "getSplitgraph.hpp"
 #include <iostream>
 #include <chrono>
 
@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
 			Splitgraph sol(g_file, delimiter);
 
 			start = std::chrono::system_clock::now();
-			vec solution = onSplitgraphs(sol,i);
+			auto solution = onSplitgraphs(sol,i);
 			end   = std::chrono::system_clock::now();
 			auto elapsed_time = end - start;
 			auto time_in_us = std::chrono::duration_cast<std::chrono::microseconds>(elapsed_time);
@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
 		//start = std::chrono::system_clock::now();
 		for (int i=0; i<size_total; ++i) {
 			start = std::chrono::system_clock::now();
-			vec solution = onCographs(g1_file, g2_file, i);
+			auto solution = onCographs(g1_file, g2_file, i);
 			end   = std::chrono::system_clock::now();
 			auto elapsed_time = end - start;
 			auto time_in_us = std::chrono::duration_cast<std::chrono::microseconds>(elapsed_time);

@@ -1,5 +1,6 @@
 #include "graph.hpp"
 #include <vector>
+#include <map>
 #include <algorithm>
 #include <utility>
 
@@ -125,10 +126,12 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 
 		//compute pair-bonus
 		const int del2 = delimiter * delimiter;
-		vec pairbonus(del2); 	//The first delimiter entries create the bucket of the first vertex in C and so on.
+//		vec pairbonus(del2); 	//The first delimiter entries create the bucket of the first vertex in C and so on.
+    std::unordered_map<int, int> pairbonus;
 							 	//If now for example vertex 4 is in the bucket of the first vertex,
 								//the fourth entry of the vector is one.
-		std::vector<std::vector<int> > independent(del2); //stores the vertices of I related to the pairs with a non-zero pairbonus
+    // data is expected to be very sparse, hence use map
+		std::unordered_multimap<int, int> independent; //stores the vertices of I related to the pairs with a non-zero pairbonus
 
 		//look at every vertex of the independent set
 		for (size_t i=delimiter; i<g.size(); ++i) {
@@ -151,8 +154,8 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 				++pairbonus[(delimiter * c2) + c1];
 
 				//store the related vertices of the independent set
-				independent[(delimiter * c1) + c2].push_back(i);
-				independent[(delimiter * c2) + c1].push_back(i);
+				independent.emplace(std::make_pair((delimiter * c1) + c2, i));
+				independent.emplace(std::make_pair((delimiter * c2) + c1, i));
 			}
 		}
 
@@ -179,10 +182,11 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 		//calculate |U({c1,c2})| for every pair {c1,c2} in pairs and find the maximum
 		//|U({c1,c2})| = pair-bonus + |U(c1)| + |U(c2)|
 	
+    // TODO: replace by std::unordered_map
 		vec u2(del2); //vector to store |U({c1,c2})|
 
 		for (int i=0; i<del2; ++i) {
-			if (pairbonus[i] == 0) {
+			if (pairbonus.count(i) == 0) {
 				continue;
 			}
 			else {
@@ -291,9 +295,9 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 			solution.push_back(c2);
 
       // TODO check if added reference is correct
-			const vec & neighbour = independent[(delimiter * c1) + c2];
-			for(size_t i=0; i<neighbour.size(); ++i) {
-				const int & n = neighbour[i];
+			const auto neighbour = independent.equal_range((delimiter * c1) + c2);
+			for(auto it = neighbour.first; it != neighbour.second; ++it) {
+				const int & n = it->second;
 				Vertex & v = g[n];
 				v.saved();
 			}

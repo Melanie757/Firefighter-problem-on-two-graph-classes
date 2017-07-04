@@ -11,20 +11,20 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 	const int & delimiter = g.getDelimiter();
 
 	//burn s and get the adjacencylist
-	Vertex & s = g.at(pos);
+	Vertex & s = g[pos];
 	s.burn();
 	vec & adjlist_s = s.getAdjlist();
 
 	//vector with number of degree 1 neighbours for every vertex in clique:
 	//look at every vertex of the independent set and if the ith vertex has 
 	//only one neighbour increase the ith entry of uc by 1
-	vec uc(delimiter);
+  vec uc(delimiter);
 	for (size_t i=delimiter; i<g.size(); ++i) {
-		const Vertex & ind = g.at(i);
+		const Vertex & ind = g[i];
 		const vec    & adj = ind.getAdjlist();
 		if (adj.size() == 1) {
-			const int & n = adj.at(0);
-			++uc.at(n);
+			const int & n = adj[0];
+			++uc[n];
 		}
 	}
 
@@ -42,7 +42,7 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 		//vertex with maximal number of degree 1 neighbours is not s
 		//=> protect this vertex
 		if (pos != index1) {
-			Vertex & sol1 = g.at(index1);
+			Vertex & sol1 = g[index1];
 			sol1.protect();
 			solution.push_back(index1);
 		}
@@ -57,7 +57,7 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 				if (i == static_cast<size_t>(pos)) {
 					continue;
 				}
-				int n = uc.at(i);
+				int n = uc[i];
 				if (n >= max2) {
 					max2   = n;
 					index2 = i;
@@ -65,18 +65,19 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 			}
 
 			//protect the vertex found above
-			Vertex & sol1 = g.at(index2);
+			Vertex & sol1 = g[index2];
 			sol1.protect();
 			solution.push_back(index2);
 		}
 
 		//find all degree one neighbours of the protected vertex and label them as saved
-		const Vertex & sol1         = g.at(solution.at(0));
+		const Vertex & sol1         = g[solution[0]];
 		const vec    & adjlist_sol1 = sol1.getAdjlist();
 
 		
+    {
 		for(size_t i=0; i<adjlist_sol1.size(); ++i) {
-			Vertex    & v         = g.at(adjlist_sol1.at(i));
+			Vertex    & v         = g[adjlist_sol1[i]];
 			const vec & adjlist_v = v.getAdjlist();
 			if(adjlist_v.size() == 1) {
 				v.saved();
@@ -85,15 +86,16 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 
 		//burn unprotected neighbours of s
 		for (size_t i=0; i<adjlist_s.size(); ++i) {
-			Vertex & next = g.at(adjlist_s.at(i));
+			Vertex & next = g[adjlist_s[i]];
 			if (next.getState() == 0) {
 				next.burn();
 			}
 		}
+    } // end pragma omp parallel
 
 		//find an unprotected and not saved vertex in the independent set if it exists
 		for (size_t i=delimiter; i<g.size(); ++i) {
-			Vertex & sol2 = g.at(i);
+			Vertex & sol2 = g[i];
 			if (sol2.getState() == 0) {
 				sol2.protect();
 				solution.push_back(i);
@@ -112,9 +114,9 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 		//the burning vertex has degree 1
 		//=> protect the neighbour so the fire cannot spread
 		if (adjlist_s.size() == 1) {
-			const int & n = adjlist_s.at(0);
+			const int & n = adjlist_s[0];
 			solution.push_back(n);
-			Vertex & v = g.at(n);
+			Vertex & v = g[n];
 			v.protect();
 			return solution;
 		}
@@ -134,19 +136,19 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 			if (i == static_cast<size_t>(pos)) {
 				continue;
 			}
-			const Vertex  & ind = g.at(i);
+			const Vertex  & ind = g[i];
 			const vec     & adj = ind.getAdjlist();
 
 			//test whether the vertex has degree 2
 			if (adj.size() == 2) {
 
 				//get the position of the two neighbours in graph_
-				const int & c1 = adj.at(0);
-				const int & c2 = adj.at(1);
+				const int & c1 = adj[0];
+				const int & c2 = adj[1];
 
 				//add c_1 to the bucket of c_2 and vice versa
-				++ pairbonus.at((delimiter * c1) + c2);
-				++ pairbonus.at((delimiter * c2) + c1);
+				++pairbonus[(delimiter * c1) + c2];
+				++pairbonus[(delimiter * c2) + c1];
 
 				//store the related vertices of the independent set
 				independent[(delimiter * c1) + c2].push_back(i);
@@ -180,7 +182,7 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 		vec u2(del2); //vector to store |U({c1,c2})|
 
 		for (int i=0; i<del2; ++i) {
-			if (pairbonus.at(i) == 0) {
+			if (pairbonus[i] == 0) {
 				continue;
 			}
 			else {
@@ -199,17 +201,17 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 
 				//if c1 is not adjacent to s, this pair of vertices can be a valid solution
 				if (!std::binary_search(adjlist_s.begin(), adjlist_s.end(), c1)) {
-					const int & pb = pairbonus.at(i);
-					const int & n = uc.at(c1) + uc.at(c2);  //|U(c1)| + |U(c2)|
-					u2.at(i) = pb + n;
+					const int & pb = pairbonus[i];
+					const int & n = uc[c1] + uc[c2];  //|U(c1)| + |U(c2)|
+					u2[i] = pb + n;
 					//std::cout << u2.at(i) << std::endl;
 				}
 				//else c2 cannot be a neighbour of s, since then c1 and c2 cannot be both protected
 				else {
 					if (!std::binary_search(adjlist_s.begin(), adjlist_s.end(), c2)) {
-						const int & pb = pairbonus.at(i);
-						const int & n = uc.at(c1) + uc.at(c2);  //|U(c1)| + |U(c2)|
-						u2.at(i) = pb + n;
+						const int & pb = pairbonus[i];
+						const int & n = uc[c1] + uc[c2];  //|U(c1)| + |U(c2)|
+						u2[i] = pb + n;
 						//std::cout << u2.at(i) << std::endl;
 					}
 					else {
@@ -246,7 +248,7 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 		//if the vertex at index1 is not adjacent to s, it does not matter wheter the vertex at index2 is adjacent
 		if (!std::binary_search(adjlist_s.begin(), adjlist_s.end(), index1)) {
 			for (size_t i=0; i<uc.size(); ++i) {
-				const int & n = uc.at(i);
+				const int & n = uc[i];
 
 				//index2 cannot be index1 => continue
 				if (i == static_cast<size_t>(index1)) {
@@ -267,7 +269,7 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 				if (std::binary_search(adjlist_s.begin(), adjlist_s.end(), i)) {
 					continue;
 				}
-				const int & n = uc.at(i);
+				const int & n = uc[i];
 				if (n >= max2) {
 					max2   = n;
 					index2 = i;
@@ -288,10 +290,11 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 			solution.push_back(c1);
 			solution.push_back(c2);
 
-			vec neighbour = independent.at((delimiter * c1) + c2);
+      // TODO check if added reference is correct
+			const vec & neighbour = independent[(delimiter * c1) + c2];
 			for(size_t i=0; i<neighbour.size(); ++i) {
-				const int & n = neighbour.at(i);
-				Vertex & v = g.at(n);
+				const int & n = neighbour[i];
+				Vertex & v = g[n];
 				v.saved();
 			}
 			
@@ -303,19 +306,19 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 			solution.push_back(index2);
 			
 			//label saved vertices
-			Vertex & v1 = g.at(index1);
+			Vertex & v1 = g[index1];
 			vec & adj_1 = v1.getAdjlist();
 			for(size_t i=0; i<adj_1.size(); ++i) {
-				Vertex    & v         = g.at(adj_1.at(i));
+				Vertex    & v         = g[adj_1[i]];
 				const vec & adj_v = v.getAdjlist();
 				if(adj_v.size() == 1) {
 					v.saved();
 				}
 			}
-			Vertex & v2 = g.at(index2);
+			Vertex & v2 = g[index2];
 			vec & adj_2 = v2.getAdjlist();
 			for(size_t i=0; i<adj_2.size(); ++i) {
-				Vertex    & v         = g.at(adj_2.at(i));
+				Vertex    & v         = g[adj_2[i]];
 				const vec & adj_v = v.getAdjlist();
 				if(adj_v.size() == 1) {
 					v.saved();
@@ -327,17 +330,17 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 		//if max{|U(c1)| + |U(c2)|} = max{|U({c1,c2})|} = 0
 		//=> no matter which vertex is protected, because it saves no other vertices
 		else {
-			solution.push_back(adjlist_s.at(0));
-			Vertex & sol = g.at(solution.at(0));
+			solution.push_back(adjlist_s[0]);
+			Vertex & sol = g[solution[0]];
 			sol.protect();
 			//burn unprotected vertices adjacent to s
 			for (size_t i=0; i<adjlist_s.size(); ++i) {
-				Vertex & next = g.at(adjlist_s.at(i));
+				Vertex & next = g[adjlist_s[i]];
 				if (next.getState() == 0) {next.burn();}
 			}
 			//find unburned vertex to protect if it exists
 			for (size_t i=0; i<g.size(); ++i) {
-				Vertex & v = g.at(i);
+				Vertex & v = g[i];
 				if (v.getState() == 0) {
 					solution.push_back(i);
 					v.protect();
@@ -347,14 +350,15 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 		}
 
 		//check whether there exists another vertex to protect (in O(n^2))
-		for(size_t i=0; i<adjlist_s.size(); ++i) {
-			Vertex & v = g.at(adjlist_s.at(i));
-			vec & adj = v.getAdjlist();
+    auto l_size = adjlist_s.size();
+		for(size_t i=0; i<l_size; ++i) {
+			const Vertex & v = g[adjlist_s[i]];
+			const vec & adj = v.getAdjlist();
 			for(size_t j=0; j < adj.size(); ++j) {
-				const int & n = adj.at(j);
+				const int & n = adj[j];
 				//std::cout << n << std::endl;
 				if(n >= delimiter) {
-					Vertex & u = g.at(n);
+					Vertex & u = g[n];
 					u.burn();
 				}
 			}
@@ -362,7 +366,7 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 		
 
 		for(size_t i=delimiter; i<g.size(); ++i) {
-			Vertex & v = g.at(i);
+			Vertex & v = g[i];
 			if(v.getState() == 0) {
 				v.protect();
 				solution.push_back(i);

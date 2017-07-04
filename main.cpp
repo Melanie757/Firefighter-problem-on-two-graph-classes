@@ -13,12 +13,12 @@ int main(int argc, char** argv) {
 	int delimiter = 0;
 
 	if(argc != 4) {
-		std::cout << "Falsche Anzahl an Argumenten." << std::endl;
+		std::cout << "False number of arguments." << std::endl;
 	}
 
 	program = argv[1];
 
-	if(program == "Splitgraph") {
+	if(program == "splitgraph") {
 	
 		file = argv[2];
 
@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
 			int c   = std::atoi(argv[2]);
 			int ind = std::atoi(argv[3]);
 			if(c == 0 || ind == 0){
-				std::cerr << "Eingabe ist keine Zahl oder .graphml Datei"
+				std::cerr << "Input is not a number or .graphml file."
 				          << std::endl;
 				return EXIT_FAILURE;
 			}
@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	else if(program == "Cograph") {
+	else if(program == "cograph") {
 		Graph g1_file, g2_file;
 		std::string filename_g1("Cograph1_1.graphml");
 		std::string filename_g2("Cograph1_2.graphml");

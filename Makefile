@@ -10,6 +10,8 @@ FILES=main.cpp read_graph.cpp onCographs.cpp onSplitgraphs.cpp getSplitgraph.cpp
 #FILES=time.cpp
 #FILES=test.cpp
 #FILES=test2.cpp
+#FILES=fp.cpp
+#FILES=average_time.cpp
 OUTPUT=program.a
 
 all: release

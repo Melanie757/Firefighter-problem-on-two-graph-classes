@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
 		}
 		
     Splitgraph sol_orig(g_file, delimiter);
-#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(static)
 		for (size_t i=0; i<g_file.size(); ++i) {
       Splitgraph sol(sol_orig);
 			start = std::chrono::system_clock::now();

@@ -6,6 +6,13 @@
 #include <iostream>
 #include <chrono>
 
+void printUsage(const char * prg){
+	std::cout << "Usage:" << std::endl
+	          << prg << " splitgraph <burning_idx> <graph_file> <delimiter>"     << std::endl
+	          << prg << " splitgraph <burning_idx> <#clique> <#independent set>" << std::endl
+		  << prg << " cograph    <burning_idx> <graph_file1> <graph_file2>"  << std::endl;
+}
+
 int main(int argc, char** argv) {
 	std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 	Graph g_file;
@@ -14,6 +21,8 @@ int main(int argc, char** argv) {
 
 	if(argc != 5) {
 		std::cout << "False number of arguments." << std::endl;
+		printUsage(argv[0]);
+		return EXIT_FAILURE;
 	}
 
 	program = argv[1];
@@ -43,6 +52,7 @@ int main(int argc, char** argv) {
 			if(c == 0 || ind == 0){
 				std::cerr << "Input is not a number or .graphml file."
 				          << std::endl;
+				printUsage(argv[0]);
 				return EXIT_FAILURE;
 			}
 			delimiter = c;
@@ -75,6 +85,12 @@ int main(int argc, char** argv) {
 
 		filename_g1  = argv[3];
 		filename_g2  = argv[4];
+
+		if(filename_g1.size() == 0
+                   || filename_g2.size() == 0){
+			printUsage(argv[0]);
+			return EXIT_FAILURE;
+		}
 		
 		std::cout << "Processing (" << filename_g1 << ","
 	          	<< filename_g2 << ")" << std::endl;

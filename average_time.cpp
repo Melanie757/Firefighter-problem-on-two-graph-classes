@@ -7,12 +7,26 @@
 #include <iomanip>
 #include <chrono>
 
+void printUsage(const char * prg){
+	std::cout << "Usage:" << std::endl
+	          << prg << " splitgraph <repeats> <burning_idx> <graph_file> <delimiter>"     << std::endl
+	          << prg << " splitgraph <repeats> <burning_idx> <#clique> <#independent set>" << std::endl
+		  << prg << " cograph    <repeats> <burning_idx> <graph_file1> <graph_file2>"  << std::endl;
+}
+
 int main(int argc, char** argv) {
 	std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 	Splitgraph g_file;
 	Graph g;
 	std::string program, file;
 	int delimiter = 0;
+
+	if(argc != 6) {
+		std::cout << "False number of arguments." << std::endl;
+		printUsage(argv[0]);
+		return EXIT_FAILURE;
+	}
+
 	program = argv[1];
 	int count = std::atoi(argv[2]);
 	int s = std::atoi(argv[3]);
@@ -40,6 +54,7 @@ int main(int argc, char** argv) {
 			if(c == 0 || ind == 0){
 				std::cerr << "Input is not a number or .graphml file."
 				          << std::endl;
+				printUsage(argv[0]);
 				return EXIT_FAILURE;
 			}
 			//delimiter = c;
@@ -69,6 +84,12 @@ int main(int argc, char** argv) {
 
 		filename_g1  = argv[4];
 		filename_g2  = argv[5];
+
+		if(filename_g1.size() == 0
+                   || filename_g2.size() == 0){
+			printUsage(argv[0]);
+			return EXIT_FAILURE;
+		}
 	
 		g1_file = read_graph(filename_g1);
 		g2_file = read_graph(filename_g2);

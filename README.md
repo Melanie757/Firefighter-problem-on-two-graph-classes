@@ -3,6 +3,8 @@ Algorithmic solution of the firefighter problem on cographs and split graphs.
 
 ## Compiling
 
+The Makefile is suitable for Mac OSX with apple clang. For compiling on linux, remove the `-stdlib` flag.
+
 ```bash
 make release # optimized release build
 make debug   # includes debug symbols
@@ -10,7 +12,7 @@ make debug   # includes debug symbols
 
 ## How to use
 
-```bash
+```
 ./prg.a splitgraph <burning_idx> <graph_file> <delimiter>
 ./prg.a splitgraph <burning_idx> <#clique> <#independent set>
 ./prg.a cograph    <burning_idx> <graph_file1> <graph_file2>

@@ -1,17 +1,17 @@
 #include "graph.hpp"
-#include "read_graph.cpp"
-#include "onCographs.cpp"
-//#include "onSplitgraphs.cpp"
-#include "getSplitgraph.cpp"
-#include "onSplitgraphs_new.cpp"
+#include "read_graph.hpp"
+#include "onCographs.hpp"
+#include "onSplitgraphs.hpp"
+#include "getSplitgraph.hpp"
+
 #include <iostream>
 #include <chrono>
 
 void printUsage(const char * prg){
-	std::cout << "Usage:" << std::endl
-	          << prg << " splitgraph <burning_idx> <graph_file> <delimiter>"     << std::endl
-	          << prg << " splitgraph <burning_idx> <#clique> <#independent set>" << std::endl
-		      << prg << " cograph    <burning_idx> <graph_file1> <graph_file2>"  << std::endl;
+  std::cout << "Usage:" << std::endl
+            << prg << " splitgraph <burning_idx> <graph_file> <delimiter>"     << std::endl
+            << prg << " splitgraph <burning_idx> <#clique> <#independent set>" << std::endl
+            << prg << " cograph    <burning_idx> <graph_file1> <graph_file2>"  << std::endl;
 }
 
 int main(int argc, char** argv) {

@@ -1,6 +1,5 @@
+#include "onCographs.hpp"
 #include <vector>
-
-using vec = std::vector<int>;
 
 //input: two cographs g1, g2 which g is the complete join of, 
 //burning vertex s from g as position of s in graph_

@@ -1,3 +1,6 @@
+#include "graph.hpp"
+#include "part_solution.hpp"
+
 #include <vector>
 #include <algorithm>
 #include <utility>
@@ -27,11 +30,13 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 		}
 	}
 
+    
 	//find vertex with maximal number of degree 1 neighbours
 	//if no vertex has degree 1 neighbours: returns vertex with index 0
 	const auto & ittomax = std::max_element(uc.begin(), uc.end()); 	//iterator on the maximum of uc
-	const int  & max1    = *ittomax; 								//maximum
+	//const int  & max1    = *ittomax; 								//maximum
 	const int  & index1  = std::distance(uc.begin(), ittomax); 		//index of the maximum in uc
+    
 
 //--------------------------------------------------------------------------------------------------------
 
@@ -111,7 +116,7 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 		//the burning vertex has degree 1
 		//=> protect the neighbour so the fire cannot spread
 		if (adjlist_s.size() == 1) {
-			const int & n = adjlist_s.at(0);
+			const int & n = adjlist_s[0];
 			solution.push_back(n);
 			Vertex & v = g.at(n);
 			v.protect();
@@ -120,351 +125,204 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 
 		//otherwise
 
-		//compute pair-bonus
-		const int del2 = delimiter * delimiter;
-		vec pairbonus(del2); 	//The first delimiter entries create the bucket of the first vertex in C and so on.
-							 	//If now for example vertex 4 is in the bucket of the first vertex,
-								//the fourth entry of the vector is one.
-		std::vector<std::vector<int> > independent(del2); //stores the vertices of I related to the pairs with a non-zero pairbonus
+		//find the set Y of vertices y in I, for which N(y) intersection N(s) = emptyset
+		//and for every z in N(s) the set X(z) of vertices x in I, for which N(x) intersection N(s) = {z}
+		vec Y;
+		std::unordered_multimap<int, int> X;
 
-		//look at every vertex of the independent set
 		for (int i=delimiter; i<g.size(); ++i) {
-			//skip the burning vertex, because two neighbours of s cannot be protected
-			if (i == pos) {
-				continue;
+			Vertex & v   = g.at(i);
+			vec    & adj = v.getAdjlist();
+			std::vector<int> intersec;
+			std::set_intersection(adj.begin(), adj.end(),
+				                  adjlist_s.begin(), adjlist_s.end(),
+				                  std::back_inserter(intersec));
+			if(intersec.size() == 0) {
+				Y.push_back(i);
 			}
-			const Vertex  & ind = g.at(i);
-			const vec     & adj = ind.getAdjlist();
-
-			//test whether the vertex has degree 2
-			if (adj.size() == 2) {
-
-				//get the position of the two neighbours in graph_
-				const int & c1 = adj.at(0);
-				const int & c2 = adj.at(1);
-
-				//add c_1 to the bucket of c_2 and vice versa
-				++ pairbonus.at((delimiter * c1) + c2);
-				++ pairbonus.at((delimiter * c2) + c1);
-
-				//store the related vertices of the independent set
-				independent[(delimiter * c1) + c2].push_back(i);
-				independent[(delimiter * c2) + c1].push_back(i);
+			else if(intersec.size() == 1) {
+				const int & z = intersec[0];
+				X.emplace(z, i);
 			}
 		}
 
-		/*
-		for(int i=0; i<del2; ++i) {
-			std::cout << i <<": ";
-			vec n = independent.at(i);
-			for(int j=0; j<n.size(); ++j) {
-				std::cout << n.at(j) << ", ";
-			}
-			std::cout << std::endl;
-		}
-		*/
+        //case 1)
+		if(Y.size() > 0) {
+			//find y in Y with maximum degree
+            int max_deg = 0;
+            int max_y;
+            // TODO: replace with std::max_element
+            for(int i=0; i<Y.size(); ++i) {
+                const int & n = Y[i];
+                Vertex & y = g.at(n);
+                if(y.numlinks() > max_deg) {
+                    max_deg = y.numlinks();
+                    max_y   = n;
+                }
+            }
+            if(max_deg >= 3) {
+                //compute u, v and add y
+                solution = part_solution(g, pos, uc);
+                solution.push_back(max_y);
+            }
 
-		/*
-		std::cout << "pair-bonus: " << std::endl;
-		for(int i=0; i<del2; ++i) {
-			if(i%10 == 0) {std::cout << std::endl;}
-			std::cout << pairbonus.at(i) << " ";
-		}
-		std::cout << std::endl;
-		*/
-		
-		//calculate |U({c1,c2})| for every pair {c1,c2} in pairs and find the maximum
-		//|U({c1,c2})| = pair-bonus + |U(c1)| + |U(c2)|
-	
-		vec u2(del2); //vector to store |U({c1,c2})|
+            //subcases
+            else if(max_deg == 2) {
+                Vertex & y     = g.at(max_y);
+                vec    & adj_y = y.getAdjlist();
+                for(int i=0; i<Y.size(); ++i) {
+                    const int & n     = Y[i];
+                    Vertex    & w     = g.at(n);
+                    vec       & adj_w = w.getAdjlist();
 
-		for (int i=0; i<del2; ++i) {
-			if (pairbonus.at(i) == 0) {
-				continue;
-			}
-			else {
-				//find the pair of vertices related to pairbonus.at(i)
-				const int c1 = i % delimiter;
-				const int c2 = i / delimiter;
+                    //1a)
+                    if(!std::includes(adj_y.begin(), adj_y.end(),
+                                      adj_w.begin(), adj_w.end())){
+                        //compute u, v and add y or w
+                        solution = part_solution(g, pos, uc);
+                        solution.push_back(max_y);
+                    }
 
-				/*
-				std::cout << "c_1, c_2: " << c1 << ", " << c2 << std::endl;
-				for(int i=0; i<adjlist_s.size(); ++i) {std::cout << adjlist_s.at(i) << ", ";}
-				std::cout << std::endl;
+                    //1b)
+                    else{
+                        const int & p = adj_y[0];
+                        const int & q = adj_y[1];
+                        //subtract 1 from |U(p,q)|
+                        pvec penalty;
+                        penalty.emplace_back(p,q);
 
-				std::cout << !std::binary_search(adjlist_s.begin(), adjlist_s.end(), c1) << std::endl;
-				std::cout << !std::binary_search(adjlist_s.begin(), adjlist_s.end(), c2) << std::endl;
-				*/
+                        solution = part_solution(g, pos, uc, penalty);
+                        //add y to the solution
+                        solution.push_back(max_y);
+                    }
+                }
+            }
+            // 1c,1d
+            else if(max_deg == 1) {
+                Vertex & y     = g.at(max_y);
+                vec    & adj_y = y.getAdjlist();
+                vec      distinct;
+                for(int i=0; i<Y.size(); ++i) {
+                    const int & n     = Y[i];
+                    Vertex    & w     = g.at(n);
+                    vec       & adj_w = w.getAdjlist();
+                    if(adj_y[0] != adj_w[0]) {
+                        distinct.push_back(n);
+                    }
+                    if(distinct.size() > 2) {
+                        break;
+                    }
+                }
 
-				//if c1 is not adjacent to s, this pair of vertices can be a valid solution
-				if (!std::binary_search(adjlist_s.begin(), adjlist_s.end(), c1)) {
-					const int & pb = pairbonus.at(i);
-					const int & n = uc.at(c1) + uc.at(c2);  //|U(c1)| + |U(c2)|
-					u2.at(i) = pb + n;
-					//std::cout << u2.at(i) << std::endl;
-				}
-				//else c2 cannot be a neighbour of s, since then c1 and c2 cannot be both protected
-				else {
-					if (!std::binary_search(adjlist_s.begin(), adjlist_s.end(), c2)) {
-						const int & pb = pairbonus.at(i);
-						const int & n = uc.at(c1) + uc.at(c2);  //|U(c1)| + |U(c2)|
-						u2.at(i) = pb + n;
-						//std::cout << u2.at(i) << std::endl;
-					}
-					else {
-						continue;
-					}
-				}
+                //1c)
+                if(distinct.size() > 1) {
+                    //compute u, v and add y
+                    solution = part_solution(g, pos, uc);
+                    solution.push_back(max_y);
+                }
 
-			}
-		}
+                //1d)
+                else if(distinct.size() == 1) {
+                    const int & p     = adj_y[0];
+                    Vertex    & v     = g.at(distinct[0]);
+                    const int & q     = v.getAdjlist()[0];
+                    //subtract 1 from |U(p,q)|
+                    pvec penalty;
+                    penalty.emplace_back(p,q);
+                    solution = part_solution(g, pos, uc, penalty);
+                    //add y to the solution
+                    //possible, that y is already saved, as (p,q) can be the best solution despite the penalty.
+                    solution.push_back(max_y);
+                }
 
-		/*
-		std::cout << "u2: " << std::endl;
-		for(int i=0; i<del2; ++i) {
-			if(i%10 == 0) {std::cout << std::endl;}
-			std::cout << u2.at(i) << " ";
-		}
-		std::cout << std::endl;
-		*/
+                //1e) -> pretend to be in case 3)
+                else{
+                    pvec penalty;
+                    // avoid multiple copying of adj list
+                    vec union_vec(adj_y);
+                    union_vec.emplace_back(0);
+                    for(const auto & n : adjlist_s){
+                        bool cont = true;
+                        const auto xz = X.equal_range(n);
 
-		//find the maximum of the |U({c1,c2})|
-		int maxu2 = 0;
-		int indexu2 = 0;
+                        if(xz.first == X.end()) {
+                            penalty.emplace_back(n, adj_y[0]);
+                            continue;
+                        }
 
-		const auto & ittomax = std::max_element(u2.begin(), u2.end()); 	//iterator on the maximum in u2
-		maxu2 = *ittomax;												//maximum (>= 0)
-		indexu2 = std::distance(u2.begin(), ittomax);					//index of the maximum in u2
-		
-
-		//find "second" maximum of uc
-		//if every entry is 0: returns last index that is not pos or index1
-		int max2   = 0;
-		int index2 = 0;
-
-		//if the vertex at index1 is not adjacent to s, it does not matter wheter the vertex at index2 is adjacent
-		if (!std::binary_search(adjlist_s.begin(), adjlist_s.end(), index1)) {
-			for (int i=0; i<uc.size(); ++i) {
-				const int & n = uc.at(i);
-
-				//index2 cannot be index1 => continue
-				if (i == index1) {
-					continue;
-				}
-
-				if (n >= max2) {
-					max2   = n;
-					index2 = i;
-				}
-			}
-		}
-
-		//if index1 is adjacent to s, index2 cannot be a neighbour of s (otherwise both cannot be protected)
-		else {
-			for (int i=0; i<uc.size(); ++i) {
-				//skip the entries in uc that belong to neighbours of s
-				if (std::binary_search(adjlist_s.begin(), adjlist_s.end(), i)) {
-					continue;
-				}
-				const int & n = uc.at(i);
-				if (n >= max2) {
-					max2   = n;
-					index2 = i;
-				}
-			}
-		}
-		
-		int maxuc = max1 + max2; //max{|U(c1)| + |U(c2)|} (>= 0, because |U(c1)|, |U(c2)| >= 0)
-
-		//TODO label saved vertices!!!!!!!
-
-		//if max{|U(c1)| + |U(c2)|} < max{|U({c1,c2})|}
-		if (maxuc < maxu2) {
-			//get the pair with max{|U({c1,c2})|}
-			const int c1 = indexu2 % delimiter;
-			const int c2 = indexu2 / delimiter;
-			//save the pair in the solution vector
-			solution.push_back(c1);
-			solution.push_back(c2);
-
-			Vertex & v1 = g.at(c1);
-			Vertex & v2 = g.at(c2);
-			v1.protect();
-			v2.protect();
-
-			//label degree one vertices that are saved by the vertices of the pair
-			if (uc.at(c1) != 0) {
-				vec & adj_1 = v1.getAdjlist();
-				for (int i=0; i<adj_1.size(); ++i) {
-					Vertex & n = g.at(adj_1.at(i));
-					vec & adj_n = n.getAdjlist();
-					if(adj_n.size() == 1) {
-						n.saved();
-					}
-				}
-			}
-
-			if (uc.at(c2) != 0) {
-				vec & adj_2 = v2.getAdjlist();
-				for (int i=0; i<adj_2.size(); ++i) {
-					Vertex & n = g.at(adj_2.at(i));
-					vec & adj_n = n.getAdjlist();
-					if(adj_n.size() == 1) {
-						n.saved();
-					}
-				}
-			}
-			
-			//label vertices that are saved by the pair
-			vec neighbour = independent.at((delimiter * c1) + c2);
-			for(int i=0; i<neighbour.size(); ++i) {
-				const int & n = neighbour.at(i);
-				Vertex & v = g.at(n);
-				v.saved();
-			}
-
-			
-			
+                        union_vec[union_vec.size()-1] = n;
+                        for(auto it = xz.first; it != xz.second; ++it) {
+                            const int    & n     = it->second;
+                            const Vertex & v     = g.at(n);
+                            const vec    & adj_v = v.getAdjlist();
+                            if(!std::includes(union_vec.begin(), union_vec.end(),
+                                              adj_v.begin(), adj_v.end())){
+                                cont = false;
+                                break;
+                            }
+                        }
+                        if(cont) {
+                            penalty.emplace_back(n, adj_y[0]);
+                        }
+                    }
+                    
+                    solution = part_solution(g, pos, uc, penalty);
+                    //third vertex to protect?
+                }
+            }
 		}
 
-		//if max{|U(c1)| + |U(c2)|} >= max{|U({c1,c2})|}
-		else if (maxuc >= maxu2) {
-			solution.push_back(index1);
-			solution.push_back(index2);
-			
-			//label saved vertices
-			Vertex & v1 = g.at(index1);
-			v1.protect();
-			vec & adj_1 = v1.getAdjlist();
-			for(int i=0; i<adj_1.size(); ++i) {
-				Vertex    & v         = g.at(adj_1.at(i));
-				const vec & adj_v = v.getAdjlist();
-				if(adj_v.size() == 1) {
-					v.saved();
-				}
-			}
-			Vertex & v2 = g.at(index2);
-			v2.protect();
-			vec & adj_2 = v2.getAdjlist();
-			for(int i=0; i<adj_2.size(); ++i) {
-				Vertex    & v         = g.at(adj_2.at(i));
-				const vec & adj_v = v.getAdjlist();
-				if(adj_v.size() == 1) {
-					v.saved();
-				}
-			}
-		}
-		
-
-		//if max{|U(c1)| + |U(c2)|} = max{|U({c1,c2})|} = 0
-		//=> no matter which vertex is protected, because it saves no other vertices
-		else {
-			solution.push_back(adjlist_s.at(0));
-			Vertex & sol = g.at(solution.at(0));
-			sol.protect();
-			//burn unprotected vertices adjacent to s
-			for (int i=0; i<adjlist_s.size(); ++i) {
-				Vertex & next = g.at(adjlist_s.at(i));
-				if (next.getState() == 0) {next.burn();}
-			}
-			//find unburned vertex to protect if it exists
-			for (int i=0; i<g.size(); ++i) {
-				Vertex & v = g.at(i);
-				if (v.getState() == 0) {
-					solution.push_back(i);
-					v.protect();
-					break;
-				}
-			}
-		}
-
-		//check whether there exists another vertex to protect (in O(n^2))
-		/*
-		for(int i=0; i<adjlist_s.size(); ++i) {
-			Vertex & v = g.at(adjlist_s.at(i));
-			if(v.getState() == 0) {
-				v.burn();
-				vec & adj = v.getAdjlist();
-				for(int j=0; j < adj.size(); ++j) {
-					const int & n = adj.at(j);
-					//std::cout << n << std::endl;
-					if(n >= delimiter) {
-						Vertex & u = g.at(n);
-						u.burn();
-					}
-				}
-			}
-		}
-
-		for(int i=delimiter; i<g.size(); ++i) {
-			Vertex & v = g.at(i);
-			if(v.getState() == 0) {
-				v.protect();
-				solution.push_back(i);
-				break;
-			}
-		}
-		*/
-		
-		/*
-		for(int i=0; i<g.size(); ++i) {
-			Vertex & v = g.at(i);
-			std::cout << "Vertex " << i << ": " << v.getState() << std::endl;
-		}
-		*/
-
-		
-		vec ok(g.size());
-		ok.at(pos) = 1;
-
-		for(int i=0; i<adjlist_s.size(); ++i) {
-			ok.at(adjlist_s.at(i)) = 1;
-		}
-		for(int i=0; i<solution.size(); ++i) {
-			ok.at(solution.at(i)) = 0;
-		}
-
-
-		for(int i=delimiter; i<ok.size(); ++i) {
-			if(ok.at(i) == 0) {
-				Vertex & v = g.at(i);
-				const vec & adj = v.getAdjlist();
-				for(int j=0; j<adj.size(); ++j) {
-					//const int & n = adj.at(j);
-					if(ok.at(adj.at(j)) == 1) {
-						ok.at(i) = 1;
-						break;
-					}
-				}
-			}
-		}
-
-		/*
-		for(int i=0; i<g.size(); ++i) {
-			std::cout << "Vertex" << i << ": " << ok.at(i) << std::endl;;
-		}
-		std::cout << std::endl;
-		*/
-
-		for(int i=delimiter; i<g.size(); ++i) {
-			if(ok.at(i) == 0) {
-				Vertex & v = g.at(i);
-				if(v.getState() == 0) {
-					v.protect();
-					solution.push_back(i);
-					break;
-				}
-			}
-		}
-		
-		
-
-		/*
-		for(int i=delimiter; i < g.size(); ++i) {
-			Vertex & v = g.at(i);
-			std::cout << "State Vertex " << i << ": " << v.getState() << std::endl;
-		}
-		*/
+        //case 2)
+        else{
+            // after running the algorithm, all free positions in xz are -1,
+            // occupied positions have a value != -1
+            vec xz;
+            xz.reserve(adjlist_s.size());
+            pvec penalty;
+            for(int i=0; i<adjlist_s.size(); ++i) {
+                bool cont     = true;
+                const auto Xz = X.equal_range(adjlist_s[i]);
+                int max_deg   = 0;
+                int max_x     = -1;
+                // TODO: max_element
+                for(auto it = Xz.first; it != Xz.second; ++it) {
+                    const int    & n = it->second;
+                    const Vertex & x = g.at(n);
+                    if(x.numlinks() > max_deg) {
+                        max_deg = x.numlinks();
+                        max_x   = n;
+                    }
+                }
+                xz.push_back(max_x);
+                const Vertex & max = g.at(max_x);
+                if(max.numlinks() == 2) {
+                    const auto & adj_max = max.getAdjlist();
+                    for(auto it = Xz.first; it != Xz.second; ++it) {
+                        const auto & v     = g.at(it->second);
+                        const auto & adj_v = v.getAdjlist();
+                        if(!std::includes(adj_max.begin(), adj_max.end(),
+                                              adj_v.begin(), adj_v.end())) {
+                            cont = false;
+                            break;
+                        }
+                    }
+                    if(cont) {
+                        // add pair (p,q)
+                        penalty.emplace_back(adj_max[0], adj_max[1]);
+                    }
+                }
+            }
+            
+            vec bonus;
+            for (int i=0; i<xz.size(); ++i) {
+                if(xz[i] != -1) {
+                    // position is occupied
+                    bonus.push_back(adjlist_s[i]);
+                }
+            }
+            solution = part_solution(g, pos, uc, penalty, bonus);
+            //third vertex to protect?
+        }
 
 	}
 	return solution;

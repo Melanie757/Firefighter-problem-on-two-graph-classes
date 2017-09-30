@@ -1,8 +1,11 @@
 CXX=clang++
-FLAGS=-std=c++11 -Wall -Wpedantic 
-FILES=fp.cpp graph.cpp onSplitgraphs.cpp onCographs.cpp getSplitgraph.cpp part_solution.cpp read_graph.cpp
-HEADERS=graph.hpp onSplitgraphs.hpp onCographs.hpp getSplitgraph.hpp part_solution.hpp read_graph.hpp
-OUTPUT=program.a
+FLAGS=-std=c++11 -Wall -Wpedantic -Iinclude 
+CPPFILES=fp.cpp graph.cpp onSplitgraphs.cpp onCographs.cpp getSplitgraph.cpp part_solution.cpp read_graph.cpp
+CPPHEADERS=graph.hpp onSplitgraphs.hpp onCographs.hpp getSplitgraph.hpp part_solution.hpp read_graph.hpp
+OUTPUT=ffp.a
+
+FILES=$(addprefix src/, $(CPPFILES))
+HEADERS=$(addprefix include/, $(CPPHEADERS))
 
 # os-specific flags
 ifeq ($(detected_OS),Darwin)

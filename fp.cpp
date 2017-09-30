@@ -1,4 +1,4 @@
-#include "graph.cpp"
+#include "graph.hpp"
 #include "read_graph.cpp"
 #include "onCographs.cpp"
 //#include "onSplitgraphs.cpp"

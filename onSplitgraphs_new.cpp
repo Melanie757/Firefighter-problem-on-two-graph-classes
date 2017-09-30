@@ -1,3 +1,5 @@
+#include "graph.hpp"
+
 #include <vector>
 #include <algorithm>
 #include <utility>
@@ -114,7 +116,7 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 		//the burning vertex has degree 1
 		//=> protect the neighbour so the fire cannot spread
 		if (adjlist_s.size() == 1) {
-			const int & n = adjlist_s.at(0);
+			const int & n = adjlist_s[0];
 			solution.push_back(n);
 			Vertex & v = g.at(n);
 			v.protect();
@@ -139,8 +141,8 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 				Y.push_back(i);
 			}
 			else if(intersec.size() == 1) {
-				int const & z = intersec[0];
-				X.emplace(std::make_pair(z, i));
+				const int & z = intersec[0];
+				X.emplace(z, i);
 			}
 		}
 
@@ -149,19 +151,18 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 			//find y in Y with maximum degree
             int max_deg = 0;
             int max_y;
-			for(int i=0; i<Y.size(); ++i) {
-                int const & n = Y[i];
+            // TODO: replace with std::max_element
+            for(int i=0; i<Y.size(); ++i) {
+                const int & n = Y[i];
                 Vertex & y = g.at(n);
                 if(y.numlinks() > max_deg) {
                     max_deg = y.numlinks();
                     max_y   = n;
                 }
             }
-            if(max_deg > 2) {
+            if(max_deg >= 3) {
                 //compute u, v and add y
-                vec penalty(0);
-                vec bonus(0);
-                solution = part_solution(g, pos, uc, penalty, bonus);
+                solution = part_solution(g, pos, uc);
                 solution.push_back(max_y);
             }
 
@@ -170,7 +171,7 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
                 Vertex & y     = g.at(max_y);
                 vec    & adj_y = y.getAdjlist();
                 for(int i=0; i<Y.size(); ++i) {
-                    int const & n     = Y[i];
+                    const int & n     = Y[i];
                     Vertex    & w     = g.at(n);
                     vec       & adj_w = w.getAdjlist();
 
@@ -178,68 +179,57 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
                     if(!std::includes(adj_y.begin(), adj_y.end(),
                                       adj_w.begin(), adj_w.end())){
                         //compute u, v and add y or w
-                        vec penalty(0);
-                        vec bonus(0);
-                        solution = part_solution(g, pos, uc, penalty, bonus);
+                        solution = part_solution(g, pos, uc);
                         solution.push_back(max_y);
                     }
 
                     //1b)
                     else{
-                        int const & p = adj_y[0];
-                        int const & q = adj_y[1];
+                        const int & p = adj_y[0];
+                        const int & q = adj_y[1];
                         //subtract 1 from |U(p,q)|
-                        vec penalty;
-                        penalty.push_back(p);
-                        penalty.push_back(q);
+                        pvec penalty;
+                        penalty.emplace_back(p,q);
 
-                        vec bonus(0);
-
-                        solution = part_solution(g, pos, uc, penalty, bonus);
+                        solution = part_solution(g, pos, uc, penalty);
                         //add y to the solution
                         solution.push_back(max_y);
                     }
                 }
             }
+            // 1c,1d
             else if(max_deg == 1) {
-                int c = 0;
                 Vertex & y     = g.at(max_y);
                 vec    & adj_y = y.getAdjlist();
                 vec      distinct;
                 for(int i=0; i<Y.size(); ++i) {
-                    int const & n     = Y[i];
+                    const int & n     = Y[i];
                     Vertex    & w     = g.at(n);
                     vec       & adj_w = w.getAdjlist();
                     if(adj_y[0] != adj_w[0]) {
-                        ++c;
                         distinct.push_back(n);
                     }
-                    if(c > 2) {
+                    if(distinct.size() > 2) {
                         break;
                     }
                 }
 
                 //1c)
-                if(c > 1) {
+                if(distinct.size() > 1) {
                     //compute u, v and add y
-                    vec penalty(0);
-                    vec bonus(0);
-                    solution = part_solution(g, pos, uc, penalty, bonus);
+                    solution = part_solution(g, pos, uc);
                     solution.push_back(max_y);
                 }
 
                 //1d)
-                else if(c == 1) {
-                    int const & p     = adj_y[0];
+                else if(distinct.size() == 1) {
+                    const int & p     = adj_y[0];
                     Vertex    & v     = g.at(distinct[0]);
-                    vec       & adj_v = v.getAdjlist();
-                    int const & q     = adj_v[0];
+                    const int & q     = v.getAdjlist()[0];
                     //subtract 1 from |U(p,q)|
-                    vec penalty;
-                    penalty.push_back(p);
-                    penalty.push_back(q);
-                    vec bonus(0);
-                    solution = part_solution(g, pos, uc, penalty, bonus);
+                    pvec penalty;
+                    penalty.emplace_back(p,q);
+                    solution = part_solution(g, pos, uc, penalty);
                     //add y to the solution
                     //possible, that y is already saved, as (p,q) can be the best solution despite the penalty.
                     solution.push_back(max_y);
@@ -247,24 +237,24 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 
                 //1e) -> pretend to be in case 3)
                 else{
-                    vec z;
-                    for (int i=0; i<adjlist_s.size(); ++i) {
-                        bool cont      = true;
-                        int const & n  = adjlist_s[i];
-
+                    pvec penalty;
+                    // avoid multiple copying of adj list
+                    vec union_vec(adj_y);
+                    union_vec.emplace_back(0);
+                    for(const auto & n : adjlist_s){
+                        bool cont = true;
                         const auto xz = X.equal_range(n);
 
                         if(xz.first == X.end()) {
-                            z.push_back(n);
+                            penalty.emplace_back(n, adj_y[0]);
                             continue;
                         }
 
-                        vec union_vec(adj_y);
-                        union_vec.push_back(n);
+                        union_vec[union_vec.size()-1] = n;
                         for(auto it = xz.first; it != xz.second; ++it) {
-                            int const & n     = it->second;
-                            Vertex    & v     = g.at(n);
-                            vec       & adj_v = v.getAdjlist();
+                            const int    & n     = it->second;
+                            const Vertex & v     = g.at(n);
+                            const vec    & adj_v = v.getAdjlist();
                             if(!std::includes(union_vec.begin(), union_vec.end(),
                                               adj_v.begin(), adj_v.end())){
                                 cont = false;
@@ -272,26 +262,11 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
                             }
                         }
                         if(cont) {
-                            z.push_back(n);
+                            penalty.emplace_back(n, adj_y[0]);
                         }
                     }
                     
-                    //subtract 1 from all pairs (N(y) = n,x) in z
-                    Vertex    & v     = g.at(max_y);
-                    vec       & adj_v = v.getAdjlist();
-                    int const & n     = adj_v[0];
-                    int const   k     = z.size();
-                    vec penalty;
-                    for (int i=0; i<2*k; ++i) {
-                        if(i%2 == 0) {
-                            penalty[i] = n;
-                        }
-                        else {
-                            penalty[i] = z[i/2];
-                        }
-                    }
-                    vec bonus(0);
-                    solution = part_solution(g, pos, uc, penalty, bonus);
+                    solution = part_solution(g, pos, uc, penalty);
                     //third vertex to protect?
                 }
             }
@@ -299,29 +274,32 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
 
         //case 2)
         else{
+            // after running the algorithm, all free positions in xz are -1,
+            // occupied positions have a value != -1
             vec xz;
             xz.reserve(adjlist_s.size());
-            vec penalty;
+            pvec penalty;
             for(int i=0; i<adjlist_s.size(); ++i) {
                 bool cont     = true;
                 const auto Xz = X.equal_range(adjlist_s[i]);
                 int max_deg   = 0;
                 int max_x     = -1;
+                // TODO: max_element
                 for(auto it = Xz.first; it != Xz.second; ++it) {
-                    int const & n = it->second;
-                    Vertex    & x = g.at(n);
+                    const int    & n = it->second;
+                    const Vertex & x = g.at(n);
                     if(x.numlinks() > max_deg) {
                         max_deg = x.numlinks();
                         max_x   = n;
                     }
                 }
                 xz.push_back(max_x);
-                Vertex max = g.at(max_x);
+                const Vertex & max = g.at(max_x);
                 if(max.numlinks() == 2) {
-                    vec & adj_max = max.getAdjlist();
+                    const auto & adj_max = max.getAdjlist();
                     for(auto it = Xz.first; it != Xz.second; ++it) {
-                        Vertex & v     = g.at(it->second);
-                        vec    & adj_v = v.getAdjlist();
+                        const auto & v     = g.at(it->second);
+                        const auto & adj_v = v.getAdjlist();
                         if(!std::includes(adj_max.begin(), adj_max.end(),
                                               adj_v.begin(), adj_v.end())) {
                             cont = false;
@@ -329,18 +307,16 @@ vec onSplitgraphs(Splitgraph & g, int pos) {
                         }
                     }
                     if(cont) {
-                        vec & adj_max = max.getAdjlist();
-                        int const & p = adj_max[0];
-                        int const & q = adj_max[1];
-                        penalty.push_back(p);
-                        penalty.push_back(q);
+                        // add pair (p,q)
+                        penalty.emplace_back(adj_max[0], adj_max[1]);
                     }
                 }
             }
             
             vec bonus;
             for (int i=0; i<xz.size(); ++i) {
-                if(xz[i] > 0) {
+                if(xz[i] != -1) {
+                    // position is occupied
                     bonus.push_back(adjlist_s[i]);
                 }
             }

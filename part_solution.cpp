@@ -1,12 +1,14 @@
+#include "graph.hpp"
 #include <vector>
 #include <algorithm>
 #include <utility>
 
-using vec = std::vector<int>;
+using vec  = std::vector<int>;
+using pvec = std::vector<std::pair<int,int>>;
 
 //vec penalty: first and second entries are a pair, third and forth, ...
 //vec bonus: single vertices
-vec part_solution(Splitgraph & g, int & pos, vec & uc, vec penalty, vec bonus) { 
+vec part_solution(Splitgraph & g, int & pos, vec & uc, pvec penalty = pvec(), vec bonus = vec()) { 
 	vec solution;
 
 	//doppelt?

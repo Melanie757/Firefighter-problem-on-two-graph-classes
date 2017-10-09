@@ -1,36 +1,94 @@
 #include "graph.hpp"
+#include "part_solution.hpp"
 #include <vector>
 #include <algorithm>
 #include <utility>
+#include <iostream>
 
-using vec  = std::vector<int>;
-using pvec = std::vector<std::pair<int,int>>;
+struct pair_hash {
+    template <class T1, class T2>
+    std::size_t operator () (const std::pair<T1,T2> &p) const {
+        auto h1 = std::hash<T1>{}(p.first);
+        auto h2 = std::hash<T2>{}(p.second);
+        return h1 ^ h2;  
+    }
+};
+
+using unordered_map_pair = std::unordered_map<std::pair<int, int>, int, pair_hash>;
 
 //vec penalty: first and second entries are a pair, third and forth, ...
 //vec bonus: single vertices
-vec part_solution(Splitgraph & g, int & pos, vec & uc, pvec penalty = pvec(), vec bonus = vec()) { 
+vec part_solution(Splitgraph & g, const int & pos, vec & adjlist_s, vec & uc, pvec penalty, vec bonus) { 
 	vec solution;
 
-	//doppelt?
-	Vertex & s = g.at(pos);
-	vec & adjlist_s = s.getAdjlist();
+  // for (int i=0; i<bonus.size(); ++i) {
+  //   std::cout << bonus[i] << " ";
+  // }
+  // std::cout << std::endl;
 
-	const auto & ittomax = std::max_element(uc.begin(), uc.end()); 	//iterator on the maximum of uc
-	const int  & max1    = *ittomax; 								//maximum
-	const int  & index1  = std::distance(uc.begin(), ittomax); 		//index of the maximum in uc
+  // for (int i=0; i< uc.size(); ++i) {
+  //   std::cout<< uc[i] << " ";
+  // }
+  // std::cout << std::endl;
+
+	for(int i=0; i<bonus.size(); ++i) {
+		++uc[bonus[i]];
+	}
+
+  // for(int i=0; i< uc.size(); ++i) {
+  //   std::cout<<uc[i] << " ";
+  // }
+  // std::cout << std::endl;
+
+  //find the maximum in uc
+	// const auto & ittomax = std::max_element(uc.begin(), uc.end()); 	//iterator on the maximum of uc
+	// const int  & max1    = *ittomax; 							                 	//maximum
+	// const int  & index1  = std::distance(uc.begin(), ittomax); 		  //index of the maximum in uc
+
+ //  //find "second" maximum of uc
+ //  //if every entry is 0: returns last index that is not pos or index1
+ //  int max2   = 0;
+ //  int index2 = 0;
+
+ //  //if the vertex at index1 is not adjacent to s, it does not matter wheter the vertex at index2 is adjacent
+ //  if (!std::binary_search(adjlist_s.begin(), adjlist_s.end(), index1)) {
+ //    for (int i=0; i<uc.size(); ++i) {
+ //      const int & n = uc[i];
+
+ //      //index2 cannot be index1 => continue
+ //      if (i == index1) {
+ //        continue;
+ //      }
+
+ //      if (n >= max2) {
+ //        max2   = n;
+ //        index2 = i;
+ //      }
+ //    }
+ //  }
+
+  //if index1 is adjacent to s, index2 cannot be a neighbour of s (otherwise both cannot be protected)
+  // else {
+  //   for (int i=0; i<uc.size(); ++i) {
+  //     //skip the entries in uc that belong to neighbours of s
+  //     if (std::binary_search(adjlist_s.begin(), adjlist_s.end(), i)) {
+  //       continue;
+  //     }
+  //     const int & n = uc.at(i);
+  //     if (n >= max2) {
+  //       max2   = n;
+  //       index2 = i;
+  //     }
+  //   }
+  // }
+
 
 	//compute pair-bonus
 	const int & delimiter = g.getDelimiter();
-	//const int del2 = delimiter * delimiter;
 
-	// vec pairbonus(del2); 	//The first delimiter entries create the bucket of the first vertex in C and so on.
-	// 					 	//If now for example vertex 4 is in the bucket of the first vertex,
-	// 						//the fourth entry of the vector is one.
-	//std::vector<std::vector<int> > independent(del2); //stores the vertices of I related to the pairs with a non-zero pairbonus
+  unordered_map_pair pairbonus;
 
-    std::unordered_map<int, int> pairbonus;
-
-    std::unordered_multimap<int, int> independent;	
+  std::unordered_multimap<int, int> independent;	
 
 	//look at every vertex of the independent set
 	for (int i=delimiter; i<g.size(); ++i) {
@@ -48,230 +106,127 @@ vec part_solution(Splitgraph & g, int & pos, vec & uc, pvec penalty = pvec(), ve
 			const int & c1 = adj.at(0);
 			const int & c2 = adj.at(1);
 
+      auto p = std::minmax(c1, c2);
+
 			//add c_1 to the bucket of c_2 and vice versa
-			++ pairbonus[(delimiter * c1) + c2];
-			++ pairbonus[(delimiter * c2) + c1];
+			++ pairbonus[p];
 
 			//store the related vertices of the independent set
 			// independent[(delimiter * c1) + c2].push_back(i);
 			// independent[(delimiter * c2) + c1].push_back(i);
-			independent.emplace(std::make_pair((delimiter * c1) + c2, i));
-			independent.emplace(std::make_pair((delimiter * c2) + c1, i));
+			independent.emplace((delimiter * c1) + c2, i);
+			independent.emplace((delimiter * c2) + c1, i);
 		}
 	}
 
-			/*
-			for(int i=0; i<del2; ++i) {
-				std::cout << i <<": ";
-				vec n = independent.at(i);
-				for(int j=0; j<n.size(); ++j) {
-					std::cout << n.at(j) << ", ";
-				}
-				std::cout << std::endl;
-			}
-			*/
-
-			/*
-			std::cout << "pair-bonus: " << std::endl;
-			for(int i=0; i<del2; ++i) {
-				if(i%10 == 0) {std::cout << std::endl;}
-				std::cout << pairbonus.at(i) << " ";
-			}
-			std::cout << std::endl;
-			*/
+  //penalty as negative pairbonus
+  for(const auto & p : penalty) {
+    --pairbonus[p];
+  }
 			
 	//calculate |U({c1,c2})| for every pair {c1,c2} in pairs and find the maximum
 	//|U({c1,c2})| = pair-bonus + |U(c1)| + |U(c2)|
-		
-	//vec u2(del2); //vector to store |U({c1,c2})|
 
-	std::unordered_map<int, int> u2;
+	unordered_map_pair u2;
 
-	for (const auto & it : pairbonus) {
-		
+	//for (const auto & it : pairbonus) {
+  for(int i=0; i<delimiter*delimiter; ++i){
+		const int c1 = i / delimiter;
+    const int c2 = i % delimiter;
 		//find the pair of vertices related to pairbonus.at(i)
-		const int c1 = it.first % delimiter;
-		const int c2 = it.first / delimiter;
+		//const int c1 = it.first.first;
+		//const int c2 = it.first.second;
 
-				/*
-				std::cout << "c_1, c_2: " << c1 << ", " << c2 << std::endl;
-				for(int i=0; i<adjlist_s.size(); ++i) {std::cout << adjlist_s.at(i) << ", ";}
-				std::cout << std::endl;
+    if(c1 < c2) {
+      const auto c12 = std::make_pair(c1,c2);
+      int pb = 0;
+      //if c1 is not adjacent to s, this pair of vertices can be a valid solution
+      if (!std::binary_search(adjlist_s.begin(), adjlist_s.end(), c1)) {
+        if(pairbonus.count(c12)){
+          pb = pairbonus[c12];
+        }
+        //const int & n = uc[c1] + uc[c2];  //|U(c1)| + |U(c2)|
+        u2[c12] = pb + uc[c1] + uc[c2];
+      }
 
-				std::cout << !std::binary_search(adjlist_s.begin(), adjlist_s.end(), c1) << std::endl;
-				std::cout << !std::binary_search(adjlist_s.begin(), adjlist_s.end(), c2) << std::endl;
-				*/
+      //else c2 cannot be a neighbour of s, since then c1 and c2 cannot be both protected
+      else {
+        if (!std::binary_search(adjlist_s.begin(), adjlist_s.end(), c2)) {
+          if(pairbonus.count(c12)){
+            pb = pairbonus[c12];
+          }
+          //const int & n = uc[c1] + uc[c2];  //|U(c1)| + |U(c2)|
+          u2[c12] = pb + uc[c1] + uc[c2];
+        }
+      }
 
-		//if c1 is not adjacent to s, this pair of vertices can be a valid solution
-		if (!std::binary_search(adjlist_s.begin(), adjlist_s.end(), c1)) {
-			const int & pb = it.second;
-			const int & n = uc[c1] + uc[c2];  //|U(c1)| + |U(c2)|
-			u2[it.first] = pb + n;
-		}
-
-		//else c2 cannot be a neighbour of s, since then c1 and c2 cannot be both protected
-		else {
-			if (!std::binary_search(adjlist_s.begin(), adjlist_s.end(), c2)) {
-				const int & pb = it.second;
-				const int & n = uc[c1] + uc[c2];  //|U(c1)| + |U(c2)|
-				u2[it.first] = pb + n;
-			}
-		}
+    }
 
 	}
 
-			/*
-			std::cout << "u2: " << std::endl;
-			for(int i=0; i<del2; ++i) {
-				if(i%10 == 0) {std::cout << std::endl;}
-				std::cout << u2.at(i) << " ";
-			}
-			std::cout << std::endl;
-			*/
+
+  // std::cout << "u2: ";
+  // for(const auto & pair : u2) {
+  //   std::cout << "(" << pair.first.first << ", " << pair.first.second << ")" << " " << pair.second << std::endl;
+  // }
+
+  // std::cout << "penalty: ";
+  // for(const auto & pair : penalty) {
+  //   std::cout << "(" << pair.first << ", " << pair.second << ")" << std::endl;
+  // }
 
 	//find the maximum of the |U({c1,c2})|
-	int maxu2 = 0;
-	int indexu2 = 0;
+	//int maxu = 0;
+	//int indexu = 0;
 
-	const auto & ittomax2 = std::max_element(u2.begin(), u2.end()); 	//iterator on the maximum in u2
-	//maxu2 = *ittomax2;												//maximum (>= 0)
-	indexu2 = std::distance(u2.begin(), ittomax2);					//index of the maximum in u2
-			
+	const auto & ittomaxu2 = std::max_element(u2.begin(), u2.end(),
+    [](const std::pair<std::pair<int,int>, int> & a,
+       const std::pair<std::pair<int,int>, int> & b)
+        {return (a.second < b.second);});
+	//int  maxu2  = ittomaxu2->second;			  //maximum (>= 0)
+	auto pairu2 = ittomaxu2->first;		    //pair attaining the maximum
 
-	//find "second" maximum of uc
-	//if every entry is 0: returns last index that is not pos or index1
-	int max2   = 0;
-	int index2 = 0;
+  const auto & c1 = pairu2.first;
+  const auto & c2 = pairu2.second;
 
-	//if the vertex at index1 is not adjacent to s, it does not matter wheter the vertex at index2 is adjacent
-	if (!std::binary_search(adjlist_s.begin(), adjlist_s.end(), index1)) {
-		for (int i=0; i<uc.size(); ++i) {
-			const int & n = uc[i];
+	solution.push_back(c1);
+	solution.push_back(c2);
 
-			//index2 cannot be index1 => continue
-			if (i == index1) {
-				continue;
-			}
+	Vertex & v1 = g.at(c1);
+	Vertex & v2 = g.at(c2);
+	v1.protect();
+	v2.protect();
 
-			if (n >= max2) {
-				max2   = n;
-				index2 = i;
-			}
-		}
-	}
-
-	//if index1 is adjacent to s, index2 cannot be a neighbour of s (otherwise both cannot be protected)
-	else {
-		for (int i=0; i<uc.size(); ++i) {
-			//skip the entries in uc that belong to neighbours of s
-			if (std::binary_search(adjlist_s.begin(), adjlist_s.end(), i)) {
-				continue;
-			}
-			const int & n = uc.at(i);
-			if (n >= max2) {
-				max2   = n;
-				index2 = i;
-			}
-		}
-	}
-			
-	int maxuc = max1 + max2; //max{|U(c1)| + |U(c2)|} (>= 0, because |U(c1)|, |U(c2)| >= 0)
-
-	//if max{|U(c1)| + |U(c2)|} < max{|U({c1,c2})|}
-	if (maxuc < maxu2) {
-		//get the pair with max{|U({c1,c2})|}
-		const int c1 = indexu2 % delimiter;
-		const int c2 = indexu2 / delimiter;
-		//save the pair in the solution vector
-		solution.push_back(c1);
-		solution.push_back(c2);
-
-		Vertex & v1 = g.at(c1);
-		Vertex & v2 = g.at(c2);
-		v1.protect();
-		v2.protect();
-
-		//label degree one vertices that are saved by the vertices of the pair
-		if (uc[c1] != 0) {
-			vec & adj_1 = v1.getAdjlist();
-			for (int i=0; i<adj_1.size(); ++i) {
-				Vertex & n = g.at(adj_1[i]);
-				vec & adj_n = n.getAdjlist();
-				if(adj_n.size() == 1) {
-					n.saved();
-				}
-			}
-		}
-
-		if (uc[c2] != 0) {
-			vec & adj_2 = v2.getAdjlist();
-			for (int i=0; i<adj_2.size(); ++i) {
-				Vertex & n = g.at(adj_2[i]);
-				vec & adj_n = n.getAdjlist();
-				if(adj_n.size() == 1) {
-					n.saved();
-				}
-			}
-		}
-				
-		//label vertices that are saved by the pair
-		const auto neighbour = independent.equal_range((delimiter * c1) + c2);
-		for(auto it = neighbour.first; it!= neighbour.second; ++it) {
-			const int & n = it->second;
-			Vertex & v = g.at(n);
-			v.saved();
-		}			
-	}
-
-	//if max{|U(c1)| + |U(c2)|} >= max{|U({c1,c2})|}
-	else if (maxuc >= maxu2) {
-		solution.push_back(index1);
-		solution.push_back(index2);
-				
-		//label saved vertices
-		Vertex & v1 = g.at(index1);
-		v1.protect();
+	//label degree one vertices that are saved by the vertices of the pair
+	if (uc[c1] != 0) {
 		vec & adj_1 = v1.getAdjlist();
-		for(int i=0; i<adj_1.size(); ++i) {
-			Vertex    & v         = g.at(adj_1.at(i));
-			const vec & adj_v = v.getAdjlist();
-			if(adj_v.size() == 1) {
-				v.saved();
-			}
-		}
-		Vertex & v2 = g.at(index2);
-		v2.protect();
-		vec & adj_2 = v2.getAdjlist();
-		for(int i=0; i<adj_2.size(); ++i) {
-			Vertex    & v         = g.at(adj_2.at(i));
-			const vec & adj_v     = v.getAdjlist();
-			if(adj_v.size() == 1) {
-				v.saved();
+		for (int i=0; i<adj_1.size(); ++i) {
+			Vertex & n = g.at(adj_1[i]);
+			vec & adj_n = n.getAdjlist();
+			if(adj_n.size() == 1) {
+				n.saved();
 			}
 		}
 	}
-			
 
-	//if max{|U(c1)| + |U(c2)|} = max{|U({c1,c2})|} = 0
-	//=> no matter which vertex is protected, because it saves no other vertices
-	else {
-		solution.push_back(adjlist_s.at(0));
-		Vertex & sol = g.at(solution.at(0));
-		sol.protect();
-		//burn unprotected vertices adjacent to s
-		for (int i=0; i<adjlist_s.size(); ++i) {
-			Vertex & next = g.at(adjlist_s.at(i));
-			if (next.getState() == 0) {next.burn();}
-		}
-		//find unburned vertex to protect if it exists
-		for (int i=0; i<g.size(); ++i) {
-			Vertex & v = g.at(i);
-			if (v.getState() == 0) {
-				solution.push_back(i);
-				v.protect();
-				break;
+	if (uc[c2] != 0) {
+		vec & adj_2 = v2.getAdjlist();
+		for (int i=0; i<adj_2.size(); ++i) {
+			Vertex & n = g.at(adj_2[i]);
+			vec & adj_n = n.getAdjlist();
+			if(adj_n.size() == 1) {
+				n.saved();
 			}
 		}
 	}
+				
+	//label vertices that are saved by the pair
+	const auto neighbour = independent.equal_range((delimiter * c1) + c2);
+	for(auto it = neighbour.first; it!= neighbour.second; ++it) {
+		const int & n = it->second;
+		Vertex & v = g.at(n);
+		v.saved();
+	}			
+
 	return solution;
 }

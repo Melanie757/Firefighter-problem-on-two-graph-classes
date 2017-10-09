@@ -2,6 +2,7 @@
 #define GRAPH_INCLUDED
 
 #include <vector>
+#include <string>
 #include <unordered_map>
 
 class Vertex {

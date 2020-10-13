@@ -1,10 +1,12 @@
+#include "read_graph.hpp"
+#include "graph.hpp"
+
 #include <iostream>
 #include <fstream>
 #include <string>
-//#include "graph.cpp"
 #include <stdexcept>
 #include <unordered_map>
-
+#include <algorithm>
 
 Graph read_graph(const std::string & filename) {
 
@@ -106,18 +108,3 @@ Graph read_graph(const std::string & filename) {
 	return result;
 }
 
-/*
-int main(){
-	
-	//std::string filename = "test.graphml";
-	std::string filename = "/Users/melaniem/Documents/Studium/Bachelorarbeit/Graphen/Splitgraph1.graphml";
-
-	Graph g(std::move(read_graph(filename)));
-	std::cout << "graph: " << std::endl;
-	g.print();
-	
-	Graph g(read_graph("test_cograph.graphml"));
-	g.print();
-	return 0;
-}
-*/

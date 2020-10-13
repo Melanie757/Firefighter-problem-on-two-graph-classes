@@ -1,4 +1,5 @@
-//#include "graph.cpp"
+#include "onSplitgraphs.hpp"
+
 #include <iostream>
 #include <random>
 #include <algorithm>
